@@ -7,7 +7,7 @@ import "./interfaces/IUniswapV3PoolDeployer.sol";
 
 // Types
 import {Slot0} from "./types/slot0.sol";
-import {Observation, initialize as initializeObservations} from "./types/oracle.sol";
+import {Observation, OracleLibrary} from "./types/oracle.sol";
 import {Info, PositionLibrary} from "./types/position.sol";
 import {ModifyPositionParams, checkTicks} from "./types/modifyPositionParams.sol";
 
@@ -57,11 +57,16 @@ contract UniswapV3Pool is IUniswapV3Pool {
         maxLiquidityPerTick = tickSpacingToMaxLiquidityPerTick(_tickSpacing);
     }
 
+    /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
+    function _blockTimestamp() internal view virtual returns (uint32) {
+        return uint32(block.timestamp); // truncation is desired
+    }
+
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, "Already initialized");
         int24 tick = getTickAtSqrtRatio(sqrtPriceX96);
 
-        (uint16 cardinality, uint16 cardinalityNext) = initializeObservations(observations, uint32(block.timestamp));
+        (uint16 cardinality, uint16 cardinalityNext) = OracleLibrary.initialize(observations, uint32(block.timestamp));
 
         slot0 = Slot0({
             sqrtPriceX96: sqrtPriceX96,
@@ -87,7 +92,11 @@ contract UniswapV3Pool is IUniswapV3Pool {
 
         bool flippedLower;
         bool flippedUpper;
-            // position = pos
+
+        if (liquidityDelta != 0) {
+            uint32 time = _blockTimestamp();
+        }
+        // position = pos
     }
 
     function _modifyPosition(ModifyPositionParams memory params)
